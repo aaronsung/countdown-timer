@@ -1,13 +1,14 @@
 import React, { useState, useRef, useCallback } from 'react';
 
-const CountdownTimer = () => {
-  const [inputSeconds, setInputSeconds] = useState('');
-  const [timeLeft, setTimeLeft] = useState(0);
+const CountdownTimer = ({ autoStart = false, initialSeconds = 0, onComplete }) => {
+  const [timeLeft, setTimeLeft] = useState(initialSeconds);
   const [isRunning, setIsRunning] = useState(false);
   
   const startTimeRef = useRef(0);
   const animationFrameRef = useRef(null);
-  const totalTimeRef = useRef(0);
+  const totalTimeRef = useRef(initialSeconds);
+
+  const startDateTime = useRef(null);
 
   const stopTimer = useCallback(() => {
     if (animationFrameRef.current) {
@@ -16,7 +17,10 @@ const CountdownTimer = () => {
     }
     setIsRunning(false);
     console.log('Stopping timer : ', Date.now());
-  }, []);
+    if (onComplete) {
+      onComplete();
+    }
+  }, [onComplete]);
 
   const updateTimer = useCallback((timestamp) => {
     if (!startTimeRef.current) {
@@ -37,48 +41,38 @@ const CountdownTimer = () => {
   }, [stopTimer]);
 
   const startTimer = useCallback(() => {
-    const seconds = parseFloat(inputSeconds);
-    if (isNaN(seconds) || seconds <= 0) {
-      alert('Please enter a valid positive number of seconds');
-      return;
-    }
-
     console.log('Starting timer : ', Date.now());
     setIsRunning(true);
     startTimeRef.current = 0;
-    totalTimeRef.current = seconds;
-    setTimeLeft(seconds);
+    totalTimeRef.current = initialSeconds;
+    setTimeLeft(initialSeconds);
     animationFrameRef.current = requestAnimationFrame(updateTimer);
-  }, [inputSeconds, updateTimer]);
+  }, [initialSeconds, updateTimer]);
 
-  const handleInputChange = (e) => {
-    const value = e.target.value;
-    // Allow only numbers and decimal point
-    if (/^\d*\.?\d*$/.test(value) || value === '') {
-      setInputSeconds(value);
+  // Add useEffect to auto-start the timer
+  React.useEffect(() => {
+    if (autoStart) {
+      startTimer();
     }
-  };
+  }, [autoStart, startTimer]);
 
   return (
-    <div className="p-6 max-w-md mx-auto bg-white rounded-xl shadow-md">
+    <div className="p-4 bg-white rounded-xl shadow-md">
       <div className="space-y-4">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-800">Countdown Timer</h2>
+          <h2 className="text-xl font-bold text-gray-800">Timer</h2>
         </div>
-        
-        <div className="flex gap-4 items-center">
-          <input
-            type="text"
-            value={inputSeconds}
-            onChange={handleInputChange}
-            placeholder="Enter seconds"
-            className="flex-1 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={isRunning}
-          />
-          
+
+        <div className="text-center">
+          <div className="text-3xl font-bold text-gray-800">
+            {timeLeft.toFixed(0)}s
+          </div>
+        </div>
+
+        <div className="flex justify-center">
           <button
             onClick={isRunning ? stopTimer : startTimer}
-            className={`px-4 py-2 rounded font-semibold text-white ${
+            className={`px-3 py-1 rounded font-semibold text-white ${
               isRunning 
                 ? 'bg-red-500 hover:bg-red-600' 
                 : 'bg-blue-500 hover:bg-blue-600'
@@ -86,12 +80,6 @@ const CountdownTimer = () => {
           >
             {isRunning ? 'Stop' : 'Start'}
           </button>
-        </div>
-
-        <div className="text-center">
-          <div className="text-4xl font-bold text-gray-800">
-            {timeLeft.toFixed(0)}s
-          </div>
         </div>
       </div>
     </div>
